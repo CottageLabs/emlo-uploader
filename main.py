@@ -1,9 +1,6 @@
 import logging
-import json
 
-from sqlalchemy.orm import Session
-
-from db3 import CofkCollectStatu, CofkCollectUpload, CofkCollectWork, CofkCollectLocation, session
+from db import CofkCollectStatu, CofkCollectUpload, CofkCollectWork, CofkCollectLocation, session
 import pandas as pd
 
 file_formats = ["*.xls", "*.xlsx"]
@@ -11,8 +8,6 @@ file_formats = ["*.xls", "*.xlsx"]
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) -35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-
-# workbook = xlrd.open_workbook("excel_test_one_sheet_limited_fields_correct_catalogue.xlsx")
 
 # Setting sheet_name to None returns a dict with sheet name as key and data frame as value
 # Occasionally additional data is included that we cannot parse so we ignore "Unnamed:" columns
@@ -22,16 +17,17 @@ wb = pd.read_excel("excel/INGEST_SP_Pley_S10400_2021.10.12a.xlsx", sheet_name=No
 sheet = list(wb.keys())[0]
 columns = wb[sheet].columns.to_list()
 print(columns)
-# print(wb[list(wb.keys())[0]])
 
-#print(wb[sheet].iloc[1].to_dict())
-
+# Importing first sheet as a dataframe and converting empty values to 0
 df = wb[sheet].where(pd.notnull(wb[sheet]), 0)
 
+# I need a mapping between sheet names and tables
+
+# Take the first row and convert to key value dict pairs
 r_insert = df.iloc[1].to_dict()
-#r_missing = list(set([c.name for c in t_cofk_collect_work.columns]) - set(wb[sheet].iloc[1].to_dict().keys()))
+
+# Establish what keys are surplus to table
 r_missing = list(set(wb[sheet].iloc[1].to_dict().keys()) - set([c for c in CofkCollectWork.__dict__.keys()]))
-#  + [{k: ''} for k in missing]
 
 # Missing for work
 # ['mention_id', 'addressee_ids', 'hashebrew', 'hasgreek', 'resource_url', 'author_ids', 'emlo_mention_id',
@@ -47,18 +43,19 @@ r_missing = list(set(wb[sheet].iloc[1].to_dict().keys()) - set([c for c in CofkC
 # 'destination_name'
 # 'answererby', ????
 
-#r_insert['upload_id'] = '0'
-#r_insert['destination_id'] = 4
+# r_insert['upload_id'] = '0'
+# r_insert['destination_id'] = 4
 
+
+# Deleting surplus keys
 for m in r_missing:
     print(r_insert[m])
     del r_insert[m]
 
-#print(r_insert['destination_id'])
-
-#stat = CofkCollectStatu(status_id=4, status_desc="Stuff")
-#session.add(stat)
-#session.commit()
+# CofkCollectStatu needs to be populated with some values
+# stat = CofkCollectStatu(status_id=4, status_desc="Stuff")
+# session.add(stat)
+# session.commit()
 
 
 upl = CofkCollectUpload(upload_username='cofka')
@@ -75,35 +72,9 @@ r_insert['upload_id'] = upl.upload_id
 r_insert['origin_id'] = loc.location_id
 r_insert['destination_id'] = loc.location_id
 
-
 w = CofkCollectWork(**r_insert)
 
-
-'''
-print(len(r_missing))
-from sqlalchemy import insert
-
-stmt = (
-    insert(t_cofk_collect_work).
-    values(**r_insert)
-)'''
-
-
-# print(len(wb[sheet].iloc[1].to_dict().values()
-#print(set([c.name for c in t_cofk_collect_work.columns]) - set(wb[sheet].iloc[1].to_dict().keys()))
-print(set(wb[sheet].iloc[1].to_dict().keys()) - set([c for c in CofkCollectWork.__dict__.keys()]))
+print(r_missing)
 
 session.add(w)
 session.commit()
-
-    # conn.commit()
-#df = df.astype(str)
-
-'''from db2 import engine
-
-with engine.connect() as conn:
-    result = conn.execute(stmt)
-    # conn.commit()
-#df = df.astype(str)
-'''
-#print(test_id))

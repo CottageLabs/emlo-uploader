@@ -16,7 +16,7 @@ def process_row(r_insert):
     # Establish what keys are surplus to table
     r_missing = list(set(r_insert.keys()) - set([c for c in CofkCollectWork.__dict__.keys()]))
 
-    # Start by initializing am upload
+    # Start by initializing an upload
     upl = CofkCollectUpload(upload_username='cofka')
     session.add(upl)
     session.commit()
@@ -36,14 +36,13 @@ def process_row(r_insert):
     # session.add(stat)
     # session.commit()
 
-    loc = CofkCollectLocation(upload_id=upl.upload_id, location_id=1000)
-
-    session.add(loc)
-    session.commit()
-
     r_insert['upload_id'] = upl.upload_id
-    r_insert['origin_id'] = loc.location_id
-    r_insert['destination_id'] = loc.location_id
+    r_insert['origin_id'] = process_location(upload_id=upl.upload_id,
+                     id=r_insert['origin_id'],
+                     name=r_surplus['origin_name'])
+    r_insert['destination_id'] = process_location(upload_id=upl.upload_id,
+                     id=r_insert['destination_id'],
+                     name=r_surplus['destination_name'])
 
     w = CofkCollectWork(**r_insert)
 
@@ -114,6 +113,52 @@ def process_row(r_insert):
 
         session.add(author)
     session.commit()
+
+    addressees = process_people(str(r_surplus['addressee_ids']),
+                             str(r_surplus['addressee_names']),
+                             upl.upload_id)
+
+    addressee_id = session.query(db.CofkCollectAddresseeOfWork.addressee_id) \
+        .order_by(desc(db.CofkCollectAddresseeOfWork.addressee_id)).first()
+
+    if not addressee_id:
+        addressee_id = 1
+    else:
+        addressee_id = addressee_id[0]
+
+    for p in addressees:
+        addressee = db.CofkCollectAddresseeOfWork(
+            addressee_id=addressee_id,
+            upload_id=upl.upload_id,
+            iwork_id=w.iwork_id,
+            iperson_id=p)
+        addressee_id = addressee_id + 1
+
+        session.add(addressee)
+    session.commit()
+
+
+def process_location(upload_id, id, name):
+    location_id = session.query(CofkCollectLocation.location_id) \
+        .filter_by(location_id=id, upload_id=upload_id).first()
+
+    if location_id is None:
+        location_id = session.query(db.CofkCollectLocation.location_id) \
+            .order_by(desc(db.CofkCollectLocation.location_id)).first()
+
+        if not location_id:
+            location_id = 1
+        else:
+            location_id = location_id[0] + 1
+
+        loc = CofkCollectLocation(upload_id=upload_id,
+                                  location_id=location_id,
+                                  location_name=name)
+
+    session.add(loc)
+    session.commit()
+
+    return location_id
 
 
 def process_people(emlo_mention_ids, mention_ids, upload_id):
@@ -198,11 +243,12 @@ df = wb[sheet].where(pd.notnull(wb[sheet]), 0)
 # Take the first row and convert to key value dict pairs
 row = df.iloc[1].to_dict()
 
-#process_row(row)
-
+process_row(row)
+'''
 for row in df.itertuples():
     if row[0] > 0:
         process_row(row._asdict())
+'''
 # Missing for work
 # ['mention_id', 'addressee_ids', 'hashebrew', 'hasgreek', 'resource_url', 'author_ids', 'emlo_mention_id',
 # 'addressee_names', 'language_id', 'resource_name', 'author_names', 'answererby', 'resource_details',

@@ -1,5 +1,0 @@
-do values in mongo need to be string?
-
-https://github.com/culturesofknowledge/site-edit/blob/5ccd24616a6391a787a8bdf47c91da0e1e3ad1f3/docker-uploader/uploader/xls_to_csv.py#L167-L172
-
-does the csv extraction only extract the last matching sheet, ignoring any that came before...?

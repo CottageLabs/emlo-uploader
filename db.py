@@ -1,11 +1,18 @@
 # coding: utf-8
-from sqlalchemy import BigInteger, CheckConstraint, Column, Date, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, SmallInteger, String, Table, Text, UniqueConstraint, text
+import sys
+
+from sqlalchemy import BigInteger, CheckConstraint, Column, Date, DateTime, ForeignKey, ForeignKeyConstraint, Index, \
+    Integer, SmallInteger, String, Table, Text, UniqueConstraint, text, select, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import OID, UUID
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 metadata = Base.metadata
+
+
+def get_class(class_name):
+    return getattr(sys.modules[__name__], class_name)
 
 
 t_cofk_cardindex_compact_work_view = Table(
@@ -72,12 +79,15 @@ t_cofk_cardindex_work_view = Table(
 )
 
 
-class CofkCollectStatu(Base):
+class CofkCollectStatus(Base):
     __tablename__ = 'cofk_collect_status'
 
     status_id = Column(Integer, primary_key=True)
     status_desc = Column(String(100), nullable=False)
     editable = Column(SmallInteger, nullable=False, server_default=text("1"))
+    
+    def is_empty():
+        return session.execute(select(func.count(CofkCollectStatus.status_id))).scalars().one() == 0
 
 
 class CofkCollectToolUser(Base):
@@ -1233,7 +1243,7 @@ class CofkCollectUpload(Base):
     _id = Column(String(32))
     upload_name = Column(String(254))
 
-    cofk_collect_statu = relationship('CofkCollectStatu')
+    cofk_collect_statu = relationship('CofkCollectStatus')
 
 
 class CofkHelpOption(Base):
@@ -1819,7 +1829,7 @@ class CofkCollectWork(Base):
     upload = relationship('CofkCollectLocation', primaryjoin='CofkCollectWork.upload_id == CofkCollectLocation.upload_id')
     upload1 = relationship('CofkCollectLocation', primaryjoin='CofkCollectWork.upload_id == CofkCollectLocation.upload_id')
     upload2 = relationship('CofkCollectUpload')
-    cofk_collect_statu = relationship('CofkCollectStatu')
+    cofk_collect_statu = relationship('CofkCollectStatus')
     work = relationship('CofkUnionWork', primaryjoin='CofkCollectWork.work_id == CofkUnionWork.work_id')
 
 

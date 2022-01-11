@@ -9,28 +9,32 @@ def get_value(work, value):
 
 
 def validate_date(y, m, d):
+    errors = []
+
     # Make sure year is early modern inclusive.
     if not 1900 >= y >= 1500:
-        raise ValueError('date_of_work_std_year is {} but must be between {} and {}'.format(y, 1500, 1900))
+        errors.append('date_of_work_std_year is {} but must be between {} and {}'.format(y, 1500, 1900))
 
     # Make sure month is between 1-12
     if not 0 < m < 13:
-        raise ValueError('date_of_work_std_month is {} but must be between 1 and 12'.format(m))
+        errors.append('date_of_work_std_month is {} but must be between 1 and 12'.format(m))
 
     # Check day of month
     if d is not None:
         # If month is April, June, September or November then day must be not more than 30
         if m in [4, 6, 9, 11] and d > 30:
-            raise ValueError('date_of_work_std_day is {} but must be between 1 and 30 for April,'
-                             'June, September or November'.format(d))
+            errors.append('date_of_work_std_day is {} but must be between 1 and 30 for April,'
+                          'June, September or November'.format(d))
 
         # For February not more than 29
         elif m == 2 and d > 29:
-            raise ValueError('date_of_work_std_day is {} but must be between 1 and 29 for February'.format(d))
+            errors.append('date_of_work_std_day is {} but must be between 1 and 29 for February'.format(d))
 
         # Otherwise
         elif d > 31:
-            raise ValueError('date_of_work_std_day is {} but must be between 1 and 31'.format(d))
+            errors.append('date_of_work_std_day is {} but must be between 1 and 31'.format(d))
+
+    return errors
 
 
 def validate_dates(work):
@@ -46,7 +50,7 @@ def validate_dates(work):
     date_of_work_std_day = get_value(work, 'date_of_work_std_day')
     date_of_work_std_is_range = get_value(work, 'date_of_work_std_is_range')
 
-    validate_date(date_of_work_std_year, date_of_work_std_month, date_of_work_std_day)
+    errors = validate_date(date_of_work_std_year, date_of_work_std_month, date_of_work_std_day)
 
     # Date is a range, switch between Julian to Gregorian calendar was around October 1582.
     # This could get sticky.
@@ -61,69 +65,82 @@ def validate_dates(work):
         second_date = datetime.datetime(date_of_work2_std_year, date_of_work2_std_month, date_of_work2_std_day)
 
         if first_date >= second_date:
-            raise ValueError("The start date in a date range can not be after the end date.")
+            errors.append("The start date in a date range can not be after the end date.")
 
     notes_on_date_of_work = get_value(work, 'notes_on_date_of_work')
 
     if notes_on_date_of_work[0].islower():
-        raise ValueError("Notes with dates have to start with an upper case letter.")
+        errors.append("Notes with dates have to start with an upper case letter.")
 
     if notes_on_date_of_work[-1] != '.':
-        raise ValueError("Notes with dates have to end with a full stop.")
+        errors.append("Notes with dates have to end with a full stop.")
+
+    return errors
 
 
 def validate_places(work):
+    errors = []
     destination_name = get_value(work, 'destination_name')
     destination_id = get_value(work, 'destination_id')
     origin_name = get_value(work, 'origin_name')
     origin_id = get_value(work, 'origin_id')
 
     if not (destination_id or destination_name):
-        raise ValueError("There is neither a destination_id nor a destination_name.")
+        errors.append("There is neither a destination_id nor a destination_name.")
 
     if not (origin_id or origin_name):
-        raise ValueError("There is neither a origin_id nor a origin_name.")
+        errors.append("There is neither a origin_id nor a origin_name.")
 
     # If place id is provided it overrides the name provided regardless if it's
     # unknown or something else.
 
     if destination_name and not destination_id and "unknown" == destination_name.strip().lower():
-        raise ValueError("Destination name must not be \"unknown\".")
+        errors.append("Destination name must not be \"unknown\".")
 
     if origin_name and not origin_id and "unknown" == origin_name.strip().lower():
-        raise ValueError("Origin name must not be \"unknown\".")
+        errors.append("Origin name must not be \"unknown\".")
+
+    return errors
 
 
 def validate_languages(work):
+    errors = []
     lang = get_value(work, 'language_id')
 
     codes = pandas.read_csv('languages.csv').language_code.to_list()
 
     if not all(l in codes for l in lang.split(';')):
-        raise ValueError("Not all values in language_id are valid 3-digit ISO language codes.")
+        errors.append("Not all values in language_id are valid 3-digit ISO language codes.")
 
     # Explicitly deleting language codes as it is a list of 8224 3 digit codes
     del codes
 
+    return errors
+
 
 def validate_keywords(work):
+    errors = []
     keywords = get_value(work, 'keywords')
 
     if len(keywords.split('; ')) - 1 != keywords.count(';'):
-        raise ValueError("Not all keywords are properly separated with a space after the separator, ;.")
+        errors.append("Not all keywords are properly separated with a space after the separator, ;.")
+
+    return errors
 
 
 def validate_work(df):
+    errors = []
     for i in range(1, len(df.index)):
         work = {k: v for k, v in df.iloc[i].to_dict().items() if v is not None}
 
-        validate_dates(work)
+        work_errors = {'id': i, 'errors': validate_dates(work) + validate_places(work)
+                                          + validate_languages(work) + validate_keywords(work)}
 
-        validate_places(work)
+        if len(work_errors['errors']) > 0:
+            errors.append(work_errors)
 
-        validate_languages(work)
+    return errors
 
-        validate_keywords(work)
 
 
 def validate_manifestation(df):

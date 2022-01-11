@@ -13,12 +13,12 @@ Postgres.
 * Python 3.8
 * SQLAlchemy 1.4.27
 * Pandas 1.3.4
-* Pika
+* Pika 1.2.0
 * [Wait-for-it](https://github.com/vishnubob/wait-for-it) (for 
 Docker-compose synchronization)
  
-The emlo-uploader image is based off of [amancevice/pandas](https://github.com/amancevice/docker-pandas),
-pre-build docker containers with Pandas set up. Pandas is used for easy
+The emlo-uploader docker image is based off of [amancevice/pandas](https://github.com/amancevice/docker-pandas),
+a pre-built docker container with Pandas set up. Pandas is used for easy
 handling of the spreadsheet data, auto-typing and more.
 
 see requirements.txt

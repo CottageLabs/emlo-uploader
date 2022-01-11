@@ -189,7 +189,7 @@ class CofkManifestations:
 class CofkWork:
 
     def __init__(self, logger: logging.Logger, upload_id: str, sheet_data: pd.DataFrame,
-                limit=None):
+                 limit=None):
         """
         non_work_data will contain any raw data about:
         1. origin location
@@ -530,7 +530,7 @@ class CofkWork:
         session.commit()
 
         self.logger.info("Resource created #{} iwork_id #{}, upload_id #{}".format(resource_id,
-            self.iwork_id, self.upload_id))
+                                                                                   self.iwork_id, self.upload_id))
 
 
 class CofkUploadExcelFile:
@@ -581,8 +581,7 @@ class CofkUploadExcelFile:
         :return:
         """
         try:
-            wb = pd.read_excel(filename, sheet_name=None,
-                               usecols=lambda c: not c.startswith('Unnamed:'))
+            wb = pd.read_excel(filename, sheet_name=None, usecols=lambda c: not c.startswith('Unnamed:'))
             self.logger.info("Successfully read file: {}".format(filename))
         except FileNotFoundError as fnfe:
             self.logger.error("File {} not found".format(filename))
@@ -647,9 +646,9 @@ class CofkUploadExcelFile:
         self.upload.total_works = len(works.ids)
 
     def validate_data(self):
-        validate_work(self.wb['Work'].where(pd.notnull(self.wb['Work']), None))
+        work_errors = validate_work(self.wb['Work'].where(pd.notnull(self.wb['Work']), None))
 
-        validate_manifestation(self.wb['Manifestation'].where(pd.notnull(self.wb['Manifestation']), None))
+        manifestation_errors = validate_manifestation(
+            self.wb['Manifestation'].where(pd.notnull(self.wb['Manifestation']), None))
 
-
-
+        print(work_errors)

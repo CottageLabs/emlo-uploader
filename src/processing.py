@@ -218,7 +218,7 @@ class CofkWork:
             self.process_work({k: v for k, v in self.sheet.iloc[i].to_dict().items() if v is not None})
 
     def preprocess_languages(self):
-        work_languages = []
+        work_languages = self.work_data['language_id'].split(';')
 
         if 'hashebrew' in self.non_work_data:
             work_languages.append("heb")

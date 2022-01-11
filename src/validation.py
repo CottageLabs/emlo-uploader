@@ -179,7 +179,7 @@ def validate_manifestation(df):
                                                                ' a shelfmark.', 'id_number_or_shelfmark'))
 
         if 'printed_edition_details' in manifestation:
-            if manifestation['printed_edition_details'][-1] != '.':
+            if manifestation['printed_edition_details'][-1] == '.':
                 m_errors.append(CofkValueException('There should not be a full stop at the end of bibliographic'
                                                    ' details of a manifestation.', 'printed_edition_details'))
 

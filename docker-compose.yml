@@ -1,15 +1,25 @@
 version: "3.8"
 services:
-  postgresdb:
-    image : postgres
+  uploader:
+    build : .
+    env_file:
+      - db.env
+    volumes:
+      - ./src:/usr/src/app
+    depends_on:
+      - "rabbitmq"
+      - "postgres"
+  rabbitmq:
+    image: rabbitmq:3-alpine
+    ports:
+      - 5672:5672
+  postgres:
+    build : database/.
     container_name: emlo_db
-    environment:
-    - POSTGRES_USER=postgres
-    - POSTGRES_PASSWORD=mysecretpassword
-    - POSTGRES_DB=postgres
+    env_file:
+      - db.env
     volumes:
     - ./data:/var/lib/postgresql/data/
-    - ./temp:/temp
     ports:
     - 5432:5432
   pgadmin:
@@ -21,4 +31,6 @@ services:
     ports:
       - 5050:80
     links:
-      - postgresdb
+      - postgres
+    depends_on:
+      - "postgres"

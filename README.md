@@ -13,5 +13,40 @@ Postgres.
 * Python 3.8
 * SQLAlchemy 1.4.27
 * Pandas 1.3.4
+* Pika
+* [Wait-for-it](https://github.com/vishnubob/wait-for-it) (for 
+Docker-compose synchronization)
+ 
+The emlo-uploader image is based off of [amancevice/pandas](https://github.com/amancevice/docker-pandas),
+pre-build docker containers with Pandas set up. Pandas is used for easy
+handling of the spreadsheet data, auto-typing and more.
 
 see requirements.txt
+
+## Deployment
+Deployed with docker-compose. For production set database environment variables
+in db.env to correct values, the database name is "_ouls_".
+
+The docker-compose file is intended for development only. It includes a PGAdmin
+container.
+
+## How it works
+
+`main.py` is mostly untouched in order to stay true to the original pipeline, it
+listens to a RabbitMQ channel to be pinged with information about a file upload
+location. Feedback is then relayed back to `emlo-edit-php/core/upload.php`.
+
+In the meantime the spreadsheet is first validated by a few checks, it is mandatory
+to have the number and names of sheets defined in `mandatory_sheets` in 
+`constants.py`, there are a few checks based off of the list provided
+`Spreadsheet_preUpload_check_2020_rev.May21.docx`. If any piece of data fails a
+test a ValueError is raised immediately. This means that:
+1) the spreadsheet will not be processed
+2) it is not known whether there are more problems with the spreadsheet, meaning
+that the user might fix the problem, re-upload and hit the next problem
+
+If everything is ready the spreadsheet is processed by `processing.py`.
+
+## Todo
+* Cleanup files post-processing
+* Decide on correct credentials for uploads

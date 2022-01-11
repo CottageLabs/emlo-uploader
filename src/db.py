@@ -1,11 +1,16 @@
 # coding: utf-8
+import os
 import sys
+import warnings
 
 from sqlalchemy import BigInteger, CheckConstraint, Column, Date, DateTime, ForeignKey, ForeignKeyConstraint, Index, \
-    Integer, SmallInteger, String, Table, Text, UniqueConstraint, text, select, func
+    Integer, SmallInteger, String, Table, Text, UniqueConstraint, text, select, func, exc
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import OID, UUID
 from sqlalchemy.ext.declarative import declarative_base
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", category=exc.SAWarning)
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -13,6 +18,7 @@ metadata = Base.metadata
 
 def get_class(class_name):
     return getattr(sys.modules[__name__], class_name)
+
 
 
 t_cofk_cardindex_compact_work_view = Table(
@@ -86,6 +92,7 @@ class CofkCollectStatus(Base):
     status_desc = Column(String(100), nullable=False)
     editable = Column(SmallInteger, nullable=False, server_default=text("1"))
     
+    @staticmethod
     def is_empty():
         return session.execute(select(func.count(CofkCollectStatus.status_id))).scalars().one() == 0
 
@@ -2086,7 +2093,12 @@ t_cofk_collect_image_of_manif = Table(
 
 from sqlalchemy import create_engine
 
-engine = create_engine('postgresql+psycopg2://postgres:mysecretpassword@localhost:5432')
+db_url = 'postgresql+psycopg2://{}:{}@{}:5432/{}'.format(os.environ['POSTGRES_USER'],
+                                                         os.environ['POSTGRES_PASSWORD'],
+                                                         os.environ['POSTGRES_CONTAINER_NAME'],
+                                                         os.environ['POSTGRES_DB'])
+
+engine = create_engine(db_url)
 
 from sqlalchemy.orm import sessionmaker
 

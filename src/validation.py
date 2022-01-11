@@ -166,7 +166,7 @@ def validate_manifestation(df):
             m_errors.append(CofkValueException('repository_id missing from manifestation.', 'repository_id'))
 
         if 'id_number_or_shelfmark' not in manifestation:
-            m_errors.append(CofkValueException('id_number_or_shelfmark missing from manifestation.'
+            m_errors.append(CofkValueException('id_number_or_shelfmark missing from manifestation.',
                                                'id_number_or_shelfmark'))
 
         else:

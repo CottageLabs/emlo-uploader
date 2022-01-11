@@ -651,4 +651,9 @@ class CofkUploadExcelFile:
         manifestation_errors = validate_manifestation(
             self.wb['Manifestation'].where(pd.notnull(self.wb['Manifestation']), None))
 
-        print(work_errors)
+        if len(work_errors) and len(manifestation_errors):
+            raise ValueError(work_errors + manifestation_errors)
+        elif len(work_errors):
+            raise ValueError(work_errors)
+        elif len(manifestation_errors):
+            raise ValueError(manifestation_errors)
